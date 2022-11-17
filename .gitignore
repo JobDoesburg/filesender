@@ -22,3 +22,5 @@ scripts/testing/test1.php
 simplesaml
 simplesamlphp-*
 docs/.bundle
+/postgres/
+/.idea/
