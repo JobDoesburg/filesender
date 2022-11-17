@@ -1,6 +1,6 @@
 <?php
 
-include_once('vendor/autoload.php');
+//include_once('vendor/autoload.php');
 include_once('classes/utils/TestSuiteSupport.class.php');
 
 if (!function_exists('str_contains')) {

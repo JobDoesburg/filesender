@@ -45,7 +45,7 @@ if(!session_id()) {
     $session_cookie_path = Config::get('session_cookie_path');
     if(!$session_cookie_path) $session_cookie_path = $site_url_parts['path'];
     
-    $isSecure = Config::get('force_ssl') || Utilities::httpsInUse();
+    $isSecure = false;
     session_set_cookie_params( array(
         'lifetime' => 0,                            // Cookie lives as long as browser isn't closed
         'path'     => $session_cookie_path,         // It is only valid for the filesender app
@@ -58,7 +58,7 @@ if(!session_id()) {
 
 
 // Ensure HTTPS if needed
-GUI::forceHTTPS();
+//GUI::forceHTTPS();
 
 // Sanitize all input variables
 $_GET = Utilities::sanitizeInput($_GET);

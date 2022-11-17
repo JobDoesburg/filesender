@@ -164,6 +164,7 @@ $lang['download'] = 'Download';
 $lang['download_bad_files_ids'] = 'Ongeldige download bestands IDs';
 $lang['download_bad_token_format'] = 'Ongeldig token-formaat';
 $lang['download_chunk_progress'] = 'Downloaden van chunk {chunkid} van {chunkcount} <br/> chunk progress: {percentofchunkcomplete} %';
+$lang['download_complete'] = 'Download voltooid';
 $lang['download_disclamer'] = 'U kunt alle bestanden in één keer downloaden, als een enkelvoudig (.zip) archiefbestand. Als dit archief gedownload is kunt u erop klikken om de ingepakte bestanden te openen.';
 $lang['download_disclamer_archive'] = 'Je kan alle bestanden tegelijk als één gecomprimeerd archief (.zip) downloaden. Klik op het gedownloade bestand om het uit te pakken en individuele bestanden te gebruiken.';
 $lang['download_disclamer_crypto_message'] = 'Klik op een bestand om de data te downloaden en te ontsleutelen op je computer.';
