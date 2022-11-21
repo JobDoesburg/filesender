@@ -699,7 +699,7 @@ filesender.ui.files = {
         var invalid = false;
         var msg = null;
 
-        var use_encryption = filesender.ui.nodes.encryption.toggle.is(':checked');
+        var use_encryption = filesender.ui.nodes.encryption.mode[0].value !== 'no_encryption';
         if( !use_encryption ) {
             $('.passwordvalidation').each(function( index ) {
                 $((this)).hide();
@@ -1000,7 +1000,7 @@ filesender.ui.doesUploadMessageContainPassword = function() {
     if( filesender.ui.isUserGettingALink() )
         return false;
     
-    if(filesender.ui.nodes.encryption.toggle.is(':checked')) {
+    if(filesender.ui.nodes.encryption.mode[0].value == 'password_encryption') {
         var p = filesender.ui.nodes.encryption.password.val();
         var m = filesender.ui.nodes.message.val();
         if( p && m ) {
@@ -1055,13 +1055,22 @@ filesender.ui.evalUploadEnabled = function() {
     }
     
 
-    if(filesender.ui.nodes.encryption.toggle.is(':checked')) {
+    if(filesender.ui.nodes.encryption.mode[0].value === 'password_encryption') {
         var passok = filesender.ui.files.checkEncryptionPassword(filesender.ui.nodes.encryption.password,false );
         if( !passok ) {
             ok = false;
             stage1ok = false;
         }
         filesender.ui.nodes.encryption.password.focus();
+    }
+
+    if(filesender.ui.nodes.encryption.mode[0].value === 'rde_encryption') {
+        var rdeok = !(filesender.rdeEncryptionEnrollmentParams == null || undefined);
+        if( !rdeok ) {
+            ok = false;
+            stage1ok = false;
+        }
+        filesender.ui.nodes.encryption.rdeEmail.focus();
     }
 
     if( filesender.ui.doesUploadMessageContainPassword()) {
@@ -1202,46 +1211,59 @@ filesender.ui.cancelAutomaticResume = function() {
     
 }
 
+async function computeRDEKey(enrollmentData) {
+    console.log("Computing RDEKey with enrollmentData: ", enrollmentData);
+    const keyGenerator = new RDEKeyGen.RDEKeyGenerator(enrollmentData)
+    return await keyGenerator.generateKey()
+}
 
 
-filesender.ui.startUpload = function() {
+filesender.ui.startUpload = async function () {
 
-    this.transfer.encryption = filesender.ui.nodes.encryption.toggle.is(':checked'); 
-    this.transfer.encryption_password = filesender.ui.nodes.encryption.password.val();
+    this.transfer.encryption = (filesender.ui.nodes.encryption.mode[0].value !== 'no_encryption');
+    if (filesender.ui.nodes.encryption.mode[0].value === 'rde_encryption') {
+        let rdeKey = await computeRDEKey(filesender.rdeEncryptionEnrollmentParams);
+        this.transfer.encryption_password = rdeKey.encryptionKey;
+        this.transfer.rde_decryption_params = JSON.stringify(rdeKey.decryptionParameters); // Push this to the server
+        console.log("encryption_password", this.transfer.encryption_password);
+        console.log("rde_decryption_params", this.transfer.rde_decryption_params);
+    } else {
+        this.transfer.encryption_password = filesender.ui.nodes.encryption.password.val();
+    }
     this.transfer.disable_terasender = filesender.ui.nodes.disable_terasender.is(':checked');
 
-    
+
     var can_use_terasender = filesender.config.terasender_enabled;
-    if( this.transfer.disable_terasender ) {
+    if (this.transfer.disable_terasender) {
         can_use_terasender = false;
     }
     var v2018_importKey_deriveKey = window.filesender.crypto_app().crypto_key_version_constants.v2018_importKey_deriveKey;
-    if(this.transfer.encryption
-       && filesender.config.encryption_key_version_new_files == v2018_importKey_deriveKey
-       && use_webasm_pbkdf2_implementation()) {
+    if (this.transfer.encryption
+        && filesender.config.encryption_key_version_new_files == v2018_importKey_deriveKey
+        && use_webasm_pbkdf2_implementation()) {
         can_use_terasender = false;
         filesender.config.terasender_enabled = can_use_terasender;
     }
     window.filesender.pbkdf2dialog.setup(!can_use_terasender);
     window.filesender.pbkdf2dialog.reset();
 
-    if(!filesender.ui.nodes.required_files) {
+    if (!filesender.ui.nodes.required_files) {
         this.transfer.expires = filesender.ui.nodes.expires.datepicker('getDate').getTime() / 1000;
-        
-        if(filesender.ui.nodes.from.length)
+
+        if (filesender.ui.nodes.from.length)
             this.transfer.from = filesender.ui.nodes.from.val();
-        
+
         this.transfer.subject = filesender.ui.nodes.subject.val();
         this.transfer.message = filesender.ui.nodes.message.val();
-        if (filesender.ui.nodes.guest_token.length){
+        if (filesender.ui.nodes.guest_token.length) {
             this.transfer.guest_token = filesender.ui.nodes.guest_token.val();
         }
 
-        if( filesender.ui.nodes.lang && filesender.ui.nodes.lang.attr('data-id')) {
+        if (filesender.ui.nodes.lang && filesender.ui.nodes.lang.attr('data-id')) {
             this.transfer.lang = filesender.ui.nodes.lang.attr('data-id');
         }
 
-        for(var o in filesender.ui.nodes.options) {
+        for (var o in filesender.ui.nodes.options) {
             var i = filesender.ui.nodes.options[o];
             var v = i.is('[type="checkbox"]') ? i.is(':checked') : i.val();
             this.transfer.options[o] = v;
@@ -1252,9 +1274,8 @@ filesender.ui.startUpload = function() {
     var crypto = window.filesender.crypto_app();
     this.transfer.encryption_key_version = filesender.config.encryption_key_version_new_files;
     this.transfer.encryption_password_hash_iterations = filesender.config.encryption_password_hash_iterations_new_files;
-    if( filesender.ui.transfer.encryption_password_version
-        == crypto.crypto_password_version_constants.v2019_generated_password_that_is_full_256bit )
-    {
+    if (filesender.ui.transfer.encryption_password_version
+        == crypto.crypto_password_version_constants.v2019_generated_password_that_is_full_256bit) {
         // as the password is 256 bits of entropy hashing is not needed
         this.transfer.encryption_password_hash_iterations = 1;
     }
@@ -1269,52 +1290,50 @@ filesender.ui.startUpload = function() {
     // back to the server. If the user has disabled this part of the form then
     // the server can throw an error.
     this.transfer.aup_checked = false;
-    if(filesender.ui.nodes.aup.length)
+    if (filesender.ui.nodes.aup.length)
         this.transfer.aup_checked = filesender.ui.nodes.aup.is(':checked');
-    
-    if( filesender.config.upload_display_per_file_stats ) {
-        window.setInterval(function() {
-            if( window.filesender.transfer.encryption && !window.filesender.pbkdf2dialog.already_complete ) {
+
+    if (filesender.config.upload_display_per_file_stats) {
+        window.setInterval(function () {
+            if (window.filesender.transfer.encryption && !window.filesender.pbkdf2dialog.already_complete) {
                 filesender.ui.uploading_again_started_at_time_touch();
                 transfer.touchAllUploadStartedInWatchdog();
-            }
-            else
-            {
+            } else {
                 for (var i = 0; i < filesender.ui.transfer.getFileCount(); i++) {
                     file = filesender.ui.transfer.files[i];
-                    filesender.ui.files.update_crust_meter( file );
+                    filesender.ui.files.update_crust_meter(file);
                 }
             }
-            
+
         }, 1000);
     }
-    
-    this.transfer.oncomplete = function(time) {
 
-        filesender.ui.uploadLogPrependRAW( lang.tr('upload_completed'), 0 );
-        
+    this.transfer.oncomplete = function (time) {
+
+        filesender.ui.uploadLogPrependRAW(lang.tr('upload_completed'), 0);
+
         filesender.ui.files.clear_crust_meter_all();
         window.filesender.pbkdf2dialog.ensure_onPBKDF2AllEnded();
 
         var usp = new URLSearchParams(window.location.search);
         var reditectargs = [];
-        if( usp.has('vid')) {
+        if (usp.has('vid')) {
             reditectargs['vid'] = usp.get('vid');
         }
         var redirect_url = filesender.ui.transfer.options.redirect_url_on_complete;
-        
-        if(redirect_url) {
-            filesender.ui.redirect(redirect_url,reditectargs);
-            
-            window.setTimeout(function(f) {
-                filesender.ui.redirect(redirect_url,reditectargs);
+
+        if (redirect_url) {
+            filesender.ui.redirect(redirect_url, reditectargs);
+
+            window.setTimeout(function (f) {
+                filesender.ui.redirect(redirect_url, reditectargs);
                 filesender.ui.alert('success', lang.tr('done_uploading_redirect').replace({url: redirect_url}));
             }, 5000);
-                    
+
             return;
         }
-        
-        var close = function() {
+
+        var close = function () {
             window.filesender.notification.clear();
             filesender.ui.goToPage(
                 filesender.ui.transfer.guest_token ? 'home' : 'transfers',
@@ -1323,20 +1342,20 @@ filesender.ui.startUpload = function() {
             );
         };
 
-        
+
         // show the completed stage.
         filesender.ui.stage = 4;
 
         filesender.ui.nodes.form.find('.downloadlink').html(filesender.ui.transfer.download_link);
-        filesender.ui.nodes.form.find('.downloadlink').attr('href',filesender.ui.transfer.download_link);
-        filesender.ui.nodes.form.find('.downloadlink').attr('data-link',filesender.ui.transfer.download_link);
+        filesender.ui.nodes.form.find('.downloadlink').attr('href', filesender.ui.transfer.download_link);
+        filesender.ui.nodes.form.find('.downloadlink').attr('data-link', filesender.ui.transfer.download_link);
 
         var link = filesender.ui.createPageLink(
             filesender.ui.transfer.guest_token ? 'home' : 'transfers',
             null,
             filesender.ui.transfer.guest_token ? null : 'transfer_' + filesender.ui.transfer.id
         );
-        filesender.ui.nodes.form.find('.mytransferslink').attr('href',link);
+        filesender.ui.nodes.form.find('.mytransferslink').attr('href', link);
 
         filesender.ui.nodes.stage1hide.hide();
         filesender.ui.nodes.stage2hide.hide();
@@ -1344,103 +1363,101 @@ filesender.ui.startUpload = function() {
         filesender.ui.nodes.stage4show.show();
         filesender.ui.nodes.form.find('.stage4').show();
 
-        if( useWebNotifications()) {
+        if (useWebNotifications()) {
             window.filesender.notification.notify(lang.tr('web_notification_upload_complete_title'),
-                                                  lang.tr('web_notification_upload_complete'),
-                                                  window.filesender.notification.image_success);
+                lang.tr('web_notification_upload_complete'),
+                window.filesender.notification.image_success);
         }
-        
+
     };
-    
-    var errorHandler = function(error) {
-        filesender.ui.error(error,function(){
+
+    var errorHandler = function (error) {
+        filesender.ui.error(error, function () {
             filesender.ui.transfer.status = 'stopped';
             filesender.ui.reload();
         });
     };
 
-    if( filesender.config.automatic_resume_number_of_retries ) {
+    if (filesender.config.automatic_resume_number_of_retries) {
         errorHandler = filesender.ui.retryingErrorHandler;
     }
     this.transfer.onerror = errorHandler;
 
-    
+
     // Setup watchdog to look for stalled clients (only in html5 and terasender modes)
-    if(filesender.supports.reader) {
+    if (filesender.supports.reader) {
         var transfer = this.transfer;
         transfer.resetWatchdog();
-        window.setInterval(function() { // Check for stalled every minute
+        window.setInterval(function () { // Check for stalled every minute
 
             // wait for pbkdf2 to be complete before we start tracking.
-            if( window.filesender.transfer.encryption && !window.filesender.pbkdf2dialog.already_complete ) {
+            if (window.filesender.transfer.encryption && !window.filesender.pbkdf2dialog.already_complete) {
                 transfer.resetWatchdog();
-            }
-            else
-            {
+            } else {
                 var stalled = transfer.getStalledProcesses();
-                
-                if(!stalled || filesender.ui.reporting_stall) return;
-                
-                if(transfer.retry()) {// Automatic retry
+
+                if (!stalled || filesender.ui.reporting_stall) return;
+
+                if (transfer.retry()) {// Automatic retry
                     filesender.ui.log('upload seems stalled, automatic retry');
                     return;
                 }
- 
+
                 filesender.ui.reporting_stall = true;
                 filesender.ui.log('upload seems stalled and max number of automatic retries exceeded, asking user about what to do');
-                
-                var retry = function() {
+
+                var retry = function () {
                     transfer.resetWatchdog();
                     filesender.ui.reporting_stall = false;
                     transfer.retry(true); // Manual retry
                 };
-                
-                var stop = function() {
-                    transfer.stop(function() {
+
+                var stop = function () {
+                    transfer.stop(function () {
                         filesender.ui.goToPage('upload');
                         filesender.ui.reporting_stall = false;
                     });
                 };
-                
-                var later = function() {
+
+                var later = function () {
                     filesender.ui.goToPage('upload');
                     filesender.ui.reporting_stall = false;
                 };
-                
-                var ignore = function() {
+
+                var ignore = function () {
                     transfer.resetWatchdog(); // Forget watchdog data
                     filesender.ui.reporting_stall = false;
                 };
-                
+
                 var buttons = {
                     retry: {callback: retry},
-                    stop:  {callback:  stop},
+                    stop: {callback: stop},
                     ignore: {callback: ignore}
                 };
-                if(transfer.isRestartSupported()) buttons['retry_later'] = {callback: later};
-                
+                if (transfer.isRestartSupported()) buttons['retry_later'] = {callback: later};
+
                 var prompt = filesender.ui.popup(lang.tr('stalled_transfer'),
-                                                 buttons,
-                                                 {onclose: ignore});
+                    buttons,
+                    {onclose: ignore});
                 $('<p />').text(lang.tr('transfer_seems_to_be_stalled')).appendTo(prompt);
             }
         }, 80 * 1000);
     }
-    
+
     var twc = $('#terasender_worker_count');
-    if(twc.length) {
+    if (twc.length) {
         twc = parseInt(twc.val());
-        if(!isNaN(twc)) {
-            if( twc > filesender.config.terasender_worker_max_count ) {
+        if (!isNaN(twc)) {
+            if (twc > filesender.config.terasender_worker_max_count) {
                 // clamp to max value rather than ignore change
                 twc = filesender.config.terasender_worker_max_count;
             }
-            if( twc > 0 && twc <= filesender.config.terasender_worker_max_count) {
-	        filesender.config.terasender_worker_count = twc;
+            if (twc > 0 && twc <= filesender.config.terasender_worker_max_count) {
+                filesender.config.terasender_worker_count = twc;
             }
         }
     }
-    
+
     filesender.ui.nodes.files.list.find('.file').addClass('uploading');
     filesender.ui.nodes.files.list.find('.file .remove').hide();
     filesender.ui.nodes.recipients.list.find('.recipient .remove').hide();
@@ -1452,7 +1469,7 @@ filesender.ui.startUpload = function() {
     filesender.ui.nodes.auto_resume_timer.text(
         lang.tr('auto_resume_timer_seconds')
             .r({seconds: 0}).out());
-    
+
     filesender.ui.nodes.upload_options_table.hide();
 
     filesender.ui.nodes.stats.number_of_files.hide();
@@ -1464,10 +1481,10 @@ filesender.ui.startUpload = function() {
     filesender.ui.nodes.form.find(':input:not(.file input[type="file"])').prop('disabled', true);
 
     // Report and possibly resume the upload
-    if( filesender.config.automatic_resume_number_of_retries ) {
+    if (filesender.config.automatic_resume_number_of_retries) {
         filesender.ui.error = filesender.ui.retryingErrorHandler;
     }
-    
+
     return this.transfer.start(errorHandler);
 };
 
@@ -1633,12 +1650,15 @@ $(function() {
         from: form.find('select[name="from"]'),
         subject: form.find('input[name="subject"]'),
         encryption: {
-            toggle: form.find('input[name="encryption"]'),
+            mode: form.find('#encryptionMode'),
             password: form.find('input[name="encryption_password"]'),
             show_hide: form.find('#encryption_show_password'),
             generate:      form.find('#encryption_generate_password'),
             use_generated: form.find('#encryption_use_generated_password'),
-            generate_again: form.find('#encryption_password_container_generate_again')
+            generate_again: form.find('#encryption_password_container_generate_again'),
+            rdeEmail: form.find('input[name="rde_email"]'),
+            rdeSearch: form.find('#rde_search'),
+            rdeRecipientDocuments: form.find('#rde_recipient_documents')
         },
         uploading_actions_msg:form.find('.uploading_actions .msg'),
         auto_resume_timer:form.find('.uploading_actions .auto_resume_timer'),
@@ -2080,30 +2100,45 @@ $(function() {
             window.filesender.notification.ask( true );
         });
     }
-    
-    if(filesender.ui.nodes.encryption.toggle.is(':checked')) {
+
+    if(filesender.ui.nodes.encryption.mode[0].value === "rde_encryption") {
+        $('#rdeEncryptionOptions').show();
+        filesender.ui.transfer.encryption = filesender.ui.nodes.encryption.mode[0].value !== "no_encryption";
+    } else if(filesender.ui.nodes.encryption.mode[0].value === "password_encryption") {
         $('#encryption_password_container').show();
         $('#encryption_password_container_generate').show();
         $('#encryption_password_show_container').show();
         $('#encryption_description_container').show();
+        $('#passwordEncryptionOptions').show();
         $('#encgroup1').show();
         $('#encgroup2').show();
         $('#encgroup3').show();
         
-        filesender.ui.transfer.encryption = filesender.ui.nodes.encryption.toggle.is(':checked');
+        filesender.ui.transfer.encryption = filesender.ui.nodes.encryption.mode[0].value !== "no_encryption";
         filesender.ui.files.checkEncryptionPassword(filesender.ui.nodes.encryption.password, true );
-
-        
     }
 
     // Bind encryption
-    filesender.ui.nodes.encryption.toggle.on('change', function() {
-        
-        $('#encgroup1').slideToggle();
-        $('#encgroup2').slideToggle();
-        $('#encgroup3').slideToggle();
-        
-        filesender.ui.transfer.encryption = filesender.ui.nodes.encryption.toggle.is(':checked');
+    filesender.ui.nodes.encryption.mode.on('change', function() {
+
+        if (filesender.ui.nodes.encryption.mode[0].value === "password_encryption") {
+            $('#passwordEncryptionOptions').slideDown();
+            $('#encgroup1').slideDown();
+            $('#encgroup2').slideDown();
+            $('#encgroup3').slideDown();
+        } else {
+            $('#passwordEncryptionOptions').slideUp();
+            $('#encgroup1').slideUp();
+            $('#encgroup2').slideUp();
+            $('#encgroup3').slideUp();
+        }
+        if (filesender.ui.nodes.encryption.mode[0].value === "rde_encryption") {
+            $('#rdeEncryptionOptions').slideDown();
+        } else {
+            $('#rdeEncryptionOptions').slideUp();
+        }
+
+        filesender.ui.transfer.encryption = filesender.ui.nodes.encryption.mode[0].value !== "no_encryption";
         
         filesender.ui.files.checkEncryptionPassword(filesender.ui.nodes.encryption.password, true );
         
@@ -2474,6 +2509,62 @@ $(function() {
         function() {
             window.filesender.pageLoaded = true;
         }, 500 );
+
+
+    const KEYSERVER = "https://keyserver.rde.jobdoesburg.dev" // todo make this configurable
+
+    filesender.ui.nodes.encryption.rdeRecipientDocuments.hide();
+    filesender.ui.nodes.encryption.rdeRecipientDocuments.slideUp();
+
+    filesender.retrievedEnrollmentParams = [];
+
+    async function rdeSearch() {
+        console.log("rdeSearch");
+        const email = filesender.ui.nodes.encryption.rdeEmail[0].value;
+        const response = await fetch(KEYSERVER + "/api/search/?email=" + email);
+        const data = await response.json();
+        filesender.retrievedEnrollmentParams = [];
+        console.log("retrieved data", data);
+        data.forEach((item) => {filesender.retrievedEnrollmentParams.push(RDEKeyGen.RDEEnrollmentParameters.fromJson(JSON.stringify(item["enrollment_parameters"])))});
+        console.log("retrieved enrollment params", filesender.retrievedEnrollmentParams);
+
+        filesender.ui.nodes.encryption.rdeRecipientDocuments.slideDown();
+
+        if (filesender.retrievedEnrollmentParams.length === 0) {
+            console.log("No RDE documents found for email " + email);
+            filesender.ui.nodes.encryption.rdeRecipientDocuments[0].innerHTML = "";
+            let option = document.createElement('option');
+            option.text = "No documents found";
+            filesender.ui.nodes.encryption.rdeRecipientDocuments[0].appendChild(option);
+            filesender.ui.nodes.encryption.rdeRecipientDocuments[0].setAttribute('disabled', 'disabled');
+        } else {
+            console.log("Found " + filesender.retrievedEnrollmentParams.length + " RDE documents for email " + email);
+            filesender.ui.nodes.encryption.rdeRecipientDocuments[0].innerHTML = "";
+            filesender.ui.nodes.encryption.rdeRecipientDocuments[0].removeAttribute('disabled');
+            for (let i = 0; i < filesender.retrievedEnrollmentParams.length; i++) {
+                console.log("Adding RDE document " + i);
+                const params = filesender.retrievedEnrollmentParams[i];
+                let option = document.createElement('option');
+                option.setAttribute('value', i);
+                console.log("params: ", params);
+                option.appendChild(document.createTextNode(params.documentName));
+                filesender.ui.nodes.encryption.rdeRecipientDocuments[0].appendChild(option);
+            }
+        }
+
+        if (filesender.retrievedEnrollmentParams.length === 1) {
+            filesender.rdeEncryptionEnrollmentParams = filesender.retrievedEnrollmentParams[0]
+            console.log("Set enrollment params to ", filesender.rdeEncryptionEnrollmentParams);
+            filesender.ui.evalUploadEnabled();
+        }
+        filesender.ui.nodes.encryption.rdeRecipientDocuments[0].addEventListener('change', function () {
+            filesender.rdeEncryptionEnrollmentParams = filesender.retrievedEnrollmentParams[this.value]
+            console.log("Set enrollment params to ", filesender.rdeEncryptionEnrollmentParams)
+            filesender.ui.evalUploadEnabled();
+        })
+    }
+    filesender.ui.nodes.encryption.rdeSearch[0].addEventListener('click', rdeSearch);
+
 });
 
 $('.instructions').on('click', function(){

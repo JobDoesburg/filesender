@@ -71,7 +71,8 @@ class RestEndpointTransfer extends RestEndpoint
             'options' => $options,
             'salt' => $transfer->salt,
             'roundtriptoken' => $creatingTransfer ? $transfer->roundtriptoken : '',
-            
+            'rde_decryption_params' => $creatingTransfer ? $transfer->rde_decryption_params : '',
+
             'files' => array_map(function ($file) use ($files_cids) {
                 $file = RestEndpointFile::cast($file);
                 if ($files_cids && array_key_exists($file['id'], $files_cids)) {
@@ -682,6 +683,9 @@ class RestEndpointTransfer extends RestEndpoint
             }
             if ($data->encryption_client_entropy) {
                 $transfer->client_entropy = $data->encryption_client_entropy;
+            }
+            if ($data->rde_decryption_params) {
+                $transfer->rde_decryption_params = $data->rde_decryption_params;
             }
             if (Utilities::isTrue($data->encryption)) {
                 // reading the salt will ensure it is made

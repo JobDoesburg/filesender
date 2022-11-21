@@ -164,12 +164,12 @@ window.filesender.config = {
 		storage_filesystem_file_not_found : "<?php echo Lang::tr('storage_filesystem_file_not_found')->out(); ?>",
 		user_hit_guest_limit : "<?php echo Lang::tr('user_hit_guest_limit')->out(); ?>",
 		rest_roundtrip_token_invalid : "<?php echo Lang::tr('rest_roundtrip_token_invalid')->out(); ?>",
-                file_encryption_show_password : "<?php echo Lang::tr('file_encryption_show_password')->out(); ?>"
-                , guest_reminder_rate_limit_reached : "<?php echo Lang::tr('guest_reminder_rate_limit_reached')->out(); ?>"
-                , user_hit_guest_rate_limit : "<?php echo Lang::tr('user_hit_guest_rate_limit')->out(); ?>"
-                , download_complete:       "<?php echo Lang::tr('download_complete')->out(); ?>"
-/**/            , download_chunk_progress: "<?php echo Lang::tr('download_chunk_progress')->out(); ?>"
-                , file_not_found:          "<?php echo Lang::tr('file_not_found')->out(); ?>"
+        file_encryption_show_password : "<?php echo Lang::tr('file_encryption_show_password')->out(); ?>",
+        guest_reminder_rate_limit_reached : "<?php echo Lang::tr('guest_reminder_rate_limit_reached')->out(); ?>",
+        user_hit_guest_rate_limit : "<?php echo Lang::tr('user_hit_guest_rate_limit')->out(); ?>",
+        download_complete: "<?php echo Lang::tr('download_complete')->out(); ?>",
+        download_chunk_progress: "<?php echo Lang::tr('download_chunk_progress')->out(); ?>",
+        file_not_found: "<?php echo Lang::tr('file_not_found')->out(); ?>"
 	},
     
     clientlogs: {

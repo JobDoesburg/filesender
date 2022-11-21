@@ -359,6 +359,7 @@ $(function() {
         var mime = $(this).attr('data-mime');
         var key_version = $(this).attr('data-key-version');
         var salt = $(this).attr('data-key-salt');
+        var rde_decryption_params = $(this).attr('data-rde-decryption-params');
         var password_version  = $(this).attr('data-password-version');
         var password_encoding = $(this).attr('data-password-encoding');
         var password_hash_iterations = $(this).attr('data-password-hash-iterations');
@@ -372,13 +373,12 @@ $(function() {
         if (typeof id == 'string'){
             id = [id];
         }
-        
         window.filesender.crypto_app().decryptDownload(
             filesender.config.base_path + 'download.php?files_ids=' + id.join(','),
             transferid,
             mime, filename,
             filesize, encrypted_filesize,
-            key_version, salt,
+            key_version, salt, rde_decryption_params,
             password_version, password_encoding,
             password_hash_iterations,
             client_entropy,

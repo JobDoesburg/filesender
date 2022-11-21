@@ -161,7 +161,13 @@ class Transfer extends DBObject
             'null'    => true,
             'default' => true,
         ),
-        
+
+        'rde_decryption_params' => array(
+            'type'    => 'text',
+            'size'    => '512',
+            'null'    => true,
+        ),
+
     );
 
     /**
@@ -313,7 +319,8 @@ class Transfer extends DBObject
     protected $client_entropy = '';
     protected $roundtriptoken = '';
     protected $guest_transfer_shown_to_user_who_invited_guest = true;
-    
+    public $rde_decryption_params = '';
+
     /**
      * Related objects cache
      */
@@ -529,7 +536,7 @@ class Transfer extends DBObject
         // Init caches to empty to avoid db queries
         $transfer->recipientsCache = array();
         $transfer->logsCache = array();
-        
+
         $transfer->userid = Auth::user()->id;
 
         $transfer->roundtriptoken = Utilities::generateEntropyString(
@@ -1003,7 +1010,7 @@ class Transfer extends DBObject
             'subject', 'message', 'created', 'made_available',
             'expires', 'expiry_extensions', 'options', 'lang', 'key_version', 'userid',
             'password_version', 'password_encoding', 'password_encoding_string', 'password_hash_iterations'
-            , 'client_entropy', 'roundtriptoken', 'guest_transfer_shown_to_user_who_invited_guest'
+            , 'client_entropy', 'roundtriptoken', 'guest_transfer_shown_to_user_who_invited_guest', 'rde_decryption_params'
         ))) {
             return $this->$property;
         }

@@ -2399,7 +2399,8 @@ td .desc {
 .clearandstats,
 .stageh,
 #encgroup1, #encgroup2, #encgroup3,
-#encryption_password_container_generate_again {
+#encryption_password_container_generate_again,
+#passwordEncryptionOptions, #rdeEncryptionOptions {
   display: none;
 }
 

@@ -212,6 +212,7 @@ function presentAVName( $v )
                         data-encrypted-size="<?php echo $file->encrypted_size; ?>"
                         data-key-version="<?php echo $transfer->key_version; ?>"
                         data-key-salt="<?php echo $transfer->salt; ?>"
+                        data-rde-decryption-params='<?php echo $transfer->rde_decryption_params; ?>'
                         data-password-version="<?php echo $transfer->password_version; ?>"
                         data-password-encoding="<?php echo $transfer->password_encoding_string; ?>"
                         data-password-hash-iterations="<?php echo $transfer->password_hash_iterations; ?>"
@@ -274,4 +275,6 @@ function presentAVName( $v )
         <?php echo $isEncrypted ? 1 : 0;  ?>
     </div>
 
+<script type="text/javascript" src="{path:js/qrcode.min.js}"></script>
+<script type="text/javascript" src="{path:js/rde/RDEDecryption.js}"></script>
 <script type="text/javascript" src="{path:js/download_page.js}"></script>

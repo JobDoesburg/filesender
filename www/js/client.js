@@ -336,6 +336,7 @@ window.filesender.client = {
         return this.post(transfer.authenticatedEndpoint('/transfer'), {
             from: transfer.from,
             encryption: transfer.encryption,
+            rde_decryption_params: transfer.rde_decryption_params,
             encryption_key_version: transfer.encryption_key_version,
             encryption_password_encoding: transfer.encryption_password_encoding,
             encryption_password_version:  transfer.encryption_password_version,

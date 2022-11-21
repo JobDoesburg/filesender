@@ -188,6 +188,7 @@ $(function() {
                     var mime        = $($this).find("[data-id='" + ids[0] + "']").attr('data-mime');
                     var key_version = $($this).find("[data-id='" + ids[0] + "']").attr('data-key-version');
                     var salt        = $($this).find("[data-id='" + ids[0] + "']").attr('data-key-salt');
+                    var rde_decryption_params = $($this).find("[data-id='" + ids[0] + "']").attr('data-rde-decryption-params');
                     var password_version  = $($this).find("[data-id='" + ids[0] + "']").attr('data-password-version');
                     var password_encoding = $($this).find("[data-id='" + ids[0] + "']").attr('data-password-encoding');
                     var password_hash_iterations = $($this).find("[data-id='" + ids[0] + "']").attr('data-password-hash-iterations');
@@ -204,7 +205,7 @@ $(function() {
                                                 + '&files_ids=' + ids.join(','),
                                                 transferid,
                                                 mime, filename, filesize, encrypted_filesize,
-                                                key_version, salt,
+                                                key_version, salt, rde_decryption_params,
                                                 password_version, password_encoding,
                                                 password_hash_iterations,
                                                 client_entropy,

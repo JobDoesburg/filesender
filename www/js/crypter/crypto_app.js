@@ -1209,31 +1209,30 @@ window.filesender.crypto_app = function () {
                 );
  
         },
-        decryptDownload: function (link, transferid, mime, name, filesize, encrypted_filesize,
-                                   key_version, salt,
-                                   password_version, password_encoding, password_hash_iterations,
-                                   client_entropy, fileiv, fileaead,
-                                   progress)
-        {
+        decryptDownload: async function (link, transferid, mime, name, filesize, encrypted_filesize,
+                                         key_version, salt, rde_decryption_params,
+                                         password_version, password_encoding, password_hash_iterations,
+                                         client_entropy, fileiv, fileaead,
+                                         progress) {
             var $this = this;
 
             filesender.terasender.crypto_encrypted_archive_download = false;
-            
+
             callbackError = function (error) {
                 window.filesender.log(error);
                 window.filesender.crypto_app_downloading = false;
-                filesender.ui.alert("error",window.filesender.config.language.file_encryption_wrong_password);
-                if (progress){
+                filesender.ui.alert("error", window.filesender.config.language.file_encryption_wrong_password);
+                if (progress) {
                     progress.html(window.filesender.config.language.file_encryption_wrong_password);
                 }
             };
 
             // Should we use streamsaver for this download?
             window.filesender.config.use_streamsaver = window.filesender.config.allow_streamsaver;
-            if( this.disable_streamsaver ) {
+            if (this.disable_streamsaver) {
                 window.filesender.config.use_streamsaver = false;
             }
-            
+
             /*
              * This is a blob visitor that performs a legacy (as of mid 2020)
              * chunked download. The legacy code has been brought forward to allow
@@ -1254,27 +1253,29 @@ window.filesender.crypto_app = function () {
                 bytesProcessed: 0,
                 expected_size: filesize,
                 callbackError: callbackError,
-                name: function() { return "legacy"; },
-                error: function(error) {
+                name: function () {
+                    return "legacy";
                 },
-                visit: function(chunkid,decryptedData) {
-                    window.filesender.log("blobSinkLegacy visiting chunkid " + chunkid + "  data.len " + decryptedData.length );
+                error: function (error) {
+                },
+                visit: function (chunkid, decryptedData) {
+                    window.filesender.log("blobSinkLegacy visiting chunkid " + chunkid + "  data.len " + decryptedData.length);
                     this.blobArray.push(decryptedData);
                     this.bytesProcessed += decryptedData.length;
                 },
-                done: function() {
+                done: function () {
                     window.filesender.log("blobSinkLegacy.done()");
-                    window.filesender.log("blobSinkLegacy.done()      expected size " + filesize );
-                    window.filesender.log("blobSinkLegacy.done() decryped data size " + this.bytesProcessed );
+                    window.filesender.log("blobSinkLegacy.done()      expected size " + filesize);
+                    window.filesender.log("blobSinkLegacy.done() decryped data size " + this.bytesProcessed);
 
-                    if( this.expected_size != this.bytesProcessed ) {
+                    if (this.expected_size != this.bytesProcessed) {
                         window.filesender.log("blobSinkLegacy.done() size mismatch");
                         this.callbackError('decrypted data size and expected data size do not match');
                         return;
                     }
-                    
+
                     var blob = new Blob(this.blobArray, {type: mime});
-                    window.filesender.log("blobSinkLegacy.done() using saveas to write blob" );
+                    window.filesender.log("blobSinkLegacy.done() using saveas to write blob");
                     saveAs(blob, name);
                 }
             };
@@ -1284,40 +1285,108 @@ window.filesender.crypto_app = function () {
             /*
              * If we should use the streamsaver implementation then
              * declare the code and set blobSink to use that instead
-             */                     
-            if( window.filesender.config.use_streamsaver ) {
+             */
+            if (window.filesender.config.use_streamsaver) {
 
-                window.filesender.log('Using new StreamSaver code for storing data...' );
-                blobSinkStreamed = window.filesender.streamsaver_sink( name, filesize, callbackError );
+                window.filesender.log('Using new StreamSaver code for storing data...');
+                blobSinkStreamed = window.filesender.streamsaver_sink(name, filesize, callbackError);
                 blobSink = blobSinkStreamed;
             }
 
             window.filesender.log("Using blobSink " + blobSink.name());
-            var prompt = window.filesender.ui.promptPassword(window.filesender.config.language.file_encryption_enter_password, function (pass) {
-            
-                $this.decryptDownloadToBlobSink( blobSink, pass, transferid,
-                                                 link, mime, name, filesize, encrypted_filesize,
-                                                 key_version, salt,
-                                                 password_version, password_encoding, password_hash_iterations,
-                                                 client_entropy, fileiv, fileaead,
-                                                 progress);
-            }, function(){
-                window.filesender.ui.notify('info', window.filesender.config.language.file_encryption_need_password);
-            });
+            if (rde_decryption_params) {
+                window.filesender.log("Using RDE decryption");
+                var prompt = window.filesender.ui.promptRDE(window.filesender.config.language.file_encryption_enter_password, function (pass) {
+                    // TODO: RDE password recovery
+                    $this.decryptDownloadToBlobSink(blobSink, pass, transferid,
+                        link, mime, name, filesize, encrypted_filesize,
+                        key_version, salt,
+                        password_version, password_encoding, password_hash_iterations,
+                        client_entropy, fileiv, fileaead,
+                        progress);
+                }, function () {
+                    window.filesender.ui.notify('info', window.filesender.config.language.file_encryption_need_password);
+                });
 
-            // Add a field to the prompt
-            var trshowhide = window.filesender.config.language.file_encryption_show_password;
-            var toggleView = $('<br/><div class="custom-control custom-switch " ><input class="custom-control-input"  type="checkbox" id="showdlpass" name="showdlpass" value="false"><label class="custom-control-label" for="showdlpass">' + trshowhide + '</label></div>');
-            prompt.append(toggleView);
-            $('#showdlpass').on(
-                "click",
-                function() {
-                    var v = $('#showdlpass').is(':checked');
-                    if( v ) { $('.bootbox-input').attr('type','text'); }
-                    else    { $('.bootbox-input').attr('type','password'); }
+                const PROXYSERVER = "https://proxyserver.rde.jobdoesburg.dev"
+                const PROXYSERVERWS = "wss://proxyserver.rde.jobdoesburg.dev"
+
+                console.log("rde_decryption_params", rde_decryption_params)
+
+                const decryptionParams = RDEDecryption.RDEDecryptionParameters.fromJson(rde_decryption_params);
+                console.log("Reconstructed decryption params", decryptionParams);
+                let handshake;
+
+                const qrCodes = document.getElementById("rdeQRCode");
+
+                const socketResponse = await fetch(PROXYSERVER + "/open");
+                const token = await socketResponse.text();
+                const socketUrl = PROXYSERVERWS + "/socket/" + token;
+                console.log("Using socket on", socketUrl)
+                const socket = await new WebSocket(socketUrl);
+
+                socket.onopen = function (event) {
+                    handshake = new RDEDecryption.RDEDecryptionHandshakeProtocol(window.crypto, socket, decryptionParams);
+                    const qrCode = new QRCode(qrCodes, {
+                        text: socketUrl,
+                    });
                 }
-            );
-                
+                socket.onmessage = function (event) {
+                    qrCodes.innerHTML = ""
+                    pass = "test";
+                    $this.decryptDownloadToBlobSink(blobSink, pass, transferid,
+                        link, mime, name, filesize, encrypted_filesize,
+                        key_version, salt,
+                        password_version, password_encoding, password_hash_iterations,
+                        client_entropy, fileiv, fileaead,
+                        progress);
+                }
+                socket.onclose = function (event) {
+                    console.log("Connection closed", event);
+                    pass = handshake.getRetrievedKey();
+                    qrCodes.innerHTML = ""
+                    $this.decryptDownloadToBlobSink(blobSink, pass, transferid,
+                        link, mime, name, filesize, encrypted_filesize,
+                        key_version, salt,
+                        password_version, password_encoding, password_hash_iterations,
+                        client_entropy, fileiv, fileaead,
+                        progress);
+                }
+                socket.onerror = function (event) {
+                    console.log("Connection error", event)
+                    qrCodes.innerHTML = ""
+                }
+
+
+            } else {
+                var prompt = window.filesender.ui.promptPassword(window.filesender.config.language.file_encryption_enter_password, function (pass) {
+                    // TODO: RDE password recovery
+                    $this.decryptDownloadToBlobSink(blobSink, pass, transferid,
+                        link, mime, name, filesize, encrypted_filesize,
+                        key_version, salt,
+                        password_version, password_encoding, password_hash_iterations,
+                        client_entropy, fileiv, fileaead,
+                        progress);
+                }, function () {
+                    window.filesender.ui.notify('info', window.filesender.config.language.file_encryption_need_password);
+                });
+
+                // Add a field to the prompt
+                var trshowhide = window.filesender.config.language.file_encryption_show_password;
+                var toggleView = $('<br/><div class="custom-control custom-switch " ><input class="custom-control-input"  type="checkbox" id="showdlpass" name="showdlpass" value="false"><label class="custom-control-label" for="showdlpass">' + trshowhide + '</label></div>');
+                prompt.append(toggleView);
+                $('#showdlpass').on(
+                    "click",
+                    function () {
+                        var v = $('#showdlpass').is(':checked');
+                        if (v) {
+                            $('.bootbox-input').attr('type', 'text');
+                        } else {
+                            $('.bootbox-input').attr('type', 'password');
+                        }
+                    }
+                );
+            }
         },
         // Note that this can not include : in the time part as that
         // does not work on Win in Edge.
@@ -1353,7 +1422,7 @@ window.filesender.crypto_app = function () {
             
             filesender.terasender.crypto_encrypted_archive_download = true;
             var prompt = window.filesender.ui.promptPassword(window.filesender.config.language.file_encryption_enter_password, function (pass) {
-
+                // TODO: RDE password recovery
                 var archiveName = $this.getArchiveFileName(link,selectedFiles,"zip");
                 blobSinkStreamed = window.filesender.streamsaver_sink_zip64( $this, link, transferid, archiveName, pass, selectedFiles, callbackError );
                 blobSink = blobSinkStreamed;

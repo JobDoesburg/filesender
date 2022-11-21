@@ -275,7 +275,7 @@ if( $encryption_mandatory ) {
             </div>
 
             <div class="files_actions stage1 row">
-                    <div class="col-6 text-start">
+                    <div class="text-center">
                         <a class="select_files btn btn-secondary  " href="#">
                             {tr:select_files}
                         </a>
@@ -320,74 +320,87 @@ if( $encryption_mandatory ) {
 	<div class="upload stage1 stage1options">
 
             <?php if(Config::get('encryption_enabled')) {  ?>
-                <div class="row">
+                <div class="row mt-3">
                     <div class="col">
-                        <div class="form-check form-switch custom-control custom-switch" id="encrypt_checkbox" data-related-to="encryption">
-                            <input id="encryption"
-                                   name="encryption"
-                                   class="form-check-input"
-                                   type="checkbox"
-                                   <?php echo $encryption_checkbox_checked ?>
-                            />
-                            <label for="encryption" class="form-check-label">{tr:file_encryption}</label>
-                        </div>
-                    </div>
-                </div>
-                <div id="encgroup1" class="row">
-                    <div class="col">
-                        <div class="fieldcontainer" id="encryption_password_container">  
-                            <label for="encryption_password">{tr:file_encryption_password} : </label>
-                            <input class="encryption_password"
-                                   id="encryption_password"
-                                   name="encryption_password"
-                                   type="password"
-                                   autocomplete="new-password" readonly
-                            />
-                        </div>
-                        <div class="fieldcontainer passwordvalidation" id="encryption_password_container_too_short_message">
-                            {tr:file_encryption_password_too_short}
-                        </div>
-                        <div class="fieldcontainer passwordvalidation" id="encryption_password_container_must_have_numbers_message">
-                            {tr:file_encryption_password_must_have_numbers}
-                        </div>
-                        <div class="fieldcontainer passwordvalidation" id="encryption_password_container_must_have_upper_and_lower_case_message">
-                            {tr:file_encryption_password_must_have_upper_and_lower_case}
-                        </div>
-                        <div class="fieldcontainer passwordvalidation" id="encryption_password_container_must_have_special_characters_message">
-                            {tr:file_encryption_password_must_have_special_characters}
-                        </div>
-                        <div class="fieldcontainer passwordvalidation" id="encryption_password_container_can_have_text_only_min_password_length_message">
-                            {tr:encryption_password_container_can_have_text_only_min_password_length_message}
-                        </div>
-                        <div class="fieldcontainer" id="encryption_description_disabled_container">
-                            {tr:file_encryption_description_disabled}
-                        </div>                        
-                    </div>
-                </div>
-                <div id="encgroup2" class="row">
-                    <div class="col">
-                        <div class="form-check form-switch custom-control custom-switch" id="encryption_password_container_generate">
-                            <input id="encryption_use_generated_password"
-                                   name="encryption_use_generated_password"
-                                   class="form-check-input"
-                                   type="checkbox"
-                            />  
-                            <label for="encryption_use_generated_password" class="form-check-label" >
-                                {tr:file_encryption_generate_password}
-                            </label>
-                        </div>
-                        <div class="fieldcontainer" id="encryption_password_container_generate_again">
-                            <button type="button" class="btn btn-secondary" id="encryption_generate_password">
-                                <span class="fa fa-refresh"></span>&nbsp;{tr:generate_a_different_password}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div id="encgroup3" class="row">
-                    <div class="col">
-                        <div class="form-check form-switch custom-control custom-switch" id="encryption_password_show_container">  
-                            <input id="encryption_show_password" name="encryption_show_password" class="form-check-input" type="checkbox">  
-                            <label for="encryption_show_password" class="form-check-label">{tr:file_encryption_show_password}</label>
+                        <div class="card">
+                            <div class="input-group">
+                                <select class="form-select card-header" id="encryptionMode">
+                                    <option value="no_encryption" selected>{tr:no_encryption}</option>
+                                    <option value="password_encryption">{tr:password_encryption}</option>
+                                    <option value="rde_encryption">{tr:rde_encryption}</option>
+                                </select>
+                            </div>
+                            <div id="passwordEncryptionOptions" class="card-body">
+                                <div id="encgroup1" class="row">
+                                        <div class="fieldcontainer" id="encryption_password_container">
+                                            <label for="encryption_password">{tr:file_encryption_password} : </label>
+                                            <input class="encryption_password"
+                                                   id="encryption_password"
+                                                   name="encryption_password"
+                                                   type="password"
+                                                   autocomplete="new-password" readonly
+                                            />
+                                        </div>
+                                        <div class="fieldcontainer passwordvalidation" id="encryption_password_container_too_short_message">
+                                            {tr:file_encryption_password_too_short}
+                                        </div>
+                                        <div class="fieldcontainer passwordvalidation" id="encryption_password_container_must_have_numbers_message">
+                                            {tr:file_encryption_password_must_have_numbers}
+                                        </div>
+                                        <div class="fieldcontainer passwordvalidation" id="encryption_password_container_must_have_upper_and_lower_case_message">
+                                            {tr:file_encryption_password_must_have_upper_and_lower_case}
+                                        </div>
+                                        <div class="fieldcontainer passwordvalidation" id="encryption_password_container_must_have_special_characters_message">
+                                            {tr:file_encryption_password_must_have_special_characters}
+                                        </div>
+                                        <div class="fieldcontainer passwordvalidation" id="encryption_password_container_can_have_text_only_min_password_length_message">
+                                            {tr:encryption_password_container_can_have_text_only_min_password_length_message}
+                                        </div>
+                                        <div class="fieldcontainer" id="encryption_description_disabled_container">
+                                            {tr:file_encryption_description_disabled}
+                                        </div>
+                                </div>
+                                <div id="encgroup2" class="row">
+                                    <div class="col">
+                                        <div class="form-check form-switch custom-control custom-switch" id="encryption_password_container_generate">
+                                            <input id="encryption_use_generated_password"
+                                                   name="encryption_use_generated_password"
+                                                   class="form-check-input"
+                                                   type="checkbox"
+                                            />
+                                            <label for="encryption_use_generated_password" class="form-check-label" >
+                                                {tr:file_encryption_generate_password}
+                                            </label>
+                                        </div>
+                                        <div class="fieldcontainer" id="encryption_password_container_generate_again">
+                                            <button type="button" class="btn btn-secondary" id="encryption_generate_password">
+                                                <span class="fa fa-refresh"></span>&nbsp;{tr:generate_a_different_password}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="encgroup3" class="row">
+                                    <div class="col">
+                                        <div class="form-check form-switch custom-control custom-switch" id="encryption_password_show_container">
+                                            <input id="encryption_show_password" name="encryption_show_password" class="form-check-input" type="checkbox">
+                                            <label for="encryption_show_password" class="form-check-label">{tr:file_encryption_show_password}</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="rdeEncryptionOptions" class="card-body">
+                                <p>With passport / identity card encryption, recipients will need their enrolled passport or identity card in order to decrypt the transfer.</p>
+                                <p>Passport / identity card encryption is only available to people who enrolled for this. Search below for the email address of the recipient to see whether passport / identity card encryption is available.</p>
+                                <div class="input-group mb-3">
+                                    <input type="email" class="form-control" placeholder="Recipient's email" aria-label="Recipient's email" aria-describedby="rde_search" id="rde_email" name="rde_email">
+                                    <button class="btn btn-secondary" type="button" id="rde_search">Search</button>
+                                </div>
+                                <div class="input-group">
+                                    <select class="form-select" id="rde_recipient_documents" disabled>
+                                        <option>No documents found</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -679,5 +692,6 @@ if( $encryption_mandatory ) {
     <?php if (!Config::get('disable_directory_upload')) { ?>
        <script type="text/javascript" src="{path:js/dragdrop-dirtree.js}"></script>
     <?php } ?>
+    <script type="text/javascript" src="{path:js/rde/RDEKeyGen.js}"></script>
     <script type="text/javascript" src="{path:js/upload_page.js}"></script>
 </div>

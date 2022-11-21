@@ -352,6 +352,24 @@ window.filesender.ui = {
         
     },
 
+    promptRDE: function(title, onok, oncancel) {
+        var r = bootbox.dialog({
+            title: "RDE encryption password",
+            message: 'This transfer is encrypted with RDE. Use the decryption app together with your passport or ID card to decrypt the transfer.<div id="rdeQRCode"></div>',
+            className: 'prompt-dialog',
+            centerVertical: true,
+            callback: function (result) {
+                console.log('This was logged in the callback!  result:' + result);
+                if( result ) {
+                    onok(result);
+                } else {
+                    if(oncancel) { oncancel(); }
+                }
+            }
+        });
+        return r.find('.bootbox-body');
+    },
+
     promptEmail: function(title, onok, oncancel) {
 
         if(typeof title != 'string') {

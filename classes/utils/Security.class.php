@@ -80,7 +80,7 @@ class Security
              . " media-src 'none'; "
              . " frame-src 'self'; "
              . " font-src 'self'; "
-             . " connect-src 'self'";
+             . " connect-src 'self http://localhost:8080 https://keyserver.rde.jobdoesburg.dev https://proxyserver.rde.jobdoesburg.dev wss://proxyserver.rde.jobdoesburg.dev http://localhost:8080'"; // todo - make this configurable
 
         if( Utilities::isTrue(Config::get('use_strict_csp'))) {
             header( 'Content-Security-Policy: ' . $csp, false );
